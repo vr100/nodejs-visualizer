@@ -3,3 +3,7 @@
   width: 800px;
   height: 500px;
 }
+form * {
+  display: block;
+  margin-bottom: 5px;
+}

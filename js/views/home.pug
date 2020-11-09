@@ -1,10 +1,14 @@
 doctype html
 head
-  title="Visualize"
+  title="Choose Play"
   link(rel="stylesheet" href="/visualize.css")
-  script(type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.11/paper-full.js")
-  script(type="text/javascript" src="visualize.js")
 body
-  canvas(id="drawCanvas")
-  button(id="drawButton" onclick="draw(" + data + ")")
-    | Draw
+  form(action="/showPlay" method="POST")
+    label
+      | Game:
+    input(type="text" name="game" pattern="[0-9]+" title="only numbers are valid")
+    label
+      | Play:
+    input(type="text" name="play" pattern="[0-9]+" title="only numbers are valid")
+    button(type="submit")
+      | Choose Play

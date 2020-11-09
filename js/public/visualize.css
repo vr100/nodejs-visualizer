@@ -7,3 +7,12 @@ form * {
   display: block;
   margin-bottom: 5px;
 }
+#choosePlay {
+  display:block;
+  margin-top: 10px;
+}
+#errorMessage {
+  color: red;
+  font-size: large;
+  font-weight: bold;
+}

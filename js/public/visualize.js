@@ -54,10 +54,11 @@ function drawField(scale) {
   paper.view.draw();
 }
 
-function draw() {
+function draw(data) {
   var scale = 6;
   var canvas = document.getElementById("drawCanvas");
   paper.setup("drawCanvas");
   drawField(scale)
   paper.project.remove();
+  console.log(data);
 }

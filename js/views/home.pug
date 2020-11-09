@@ -1,0 +1,10 @@
+doctype html
+head
+  title="Visualize"
+  link(rel="stylesheet" href="/visualize.css")
+  script(type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.11/paper-full.js")
+  script(type="text/javascript" src="visualize.js")
+body
+  canvas(id="drawCanvas")
+  button(id="drawButton" onclick="draw(" + data + ")")
+    | Draw

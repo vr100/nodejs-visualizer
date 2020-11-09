@@ -1,11 +1,11 @@
 const express = require('express')
-const hbs = require('hbs')
+const pug = require('pug')
 const routes = require('./routes/routes')
 const path = require('path')
 const app = express()
 const PORT = 8080
 
-app.set('view engine', hbs)
+app.set('view engine', pug)
 app.use('/', routes)
 app.use(express.static(path.join(__dirname, '/public')))
 

@@ -19,7 +19,7 @@ const startX = 50;
 const startY = 100;
 const scale = 6;
 
-const FRAME_RATE = 5;
+const FRAME_RATE = 15;
 
 function translate(x, y) {
   var newx = startX + x * scale;
@@ -141,7 +141,7 @@ function startWebSocketClient(data) {
     var drawData = data.drawData;
     var nextFrameData = data.frameData;
     draw(drawData);
-    if (data.frame > data.frameCount) return;
+    if (nextFrameData.frame > nextFrameData.frameCount) return;
     setTimeout(function() {
       ws.send(JSON.stringify(nextFrameData));
     }, interval);

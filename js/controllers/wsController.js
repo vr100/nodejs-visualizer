@@ -10,7 +10,7 @@ function handleMessage(message, socket) {
   var frameFile = path.join(data.folder, data.frame + ".json");
   var exists = fs.existsSync(frameFile);
   if (!exists) {
-    console.log(`$frameFile does not exist`);
+    console.log(`${frameFile} does not exist, total frames: ${data.frameCount}`);
     return;
   }
   var drawData = fs.readFileSync(frameFile, "utf-8");

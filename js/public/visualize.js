@@ -1,29 +1,39 @@
 paper.install(window);
 
-const HOME_TEXT = "home";
-const AWAY_TEXT = "away";
-const HOME_COLOR = "red";
+const HOME_TEAM = "home";
+const AWAY_TEAM = "away";
+const BALL_TEAM = "football";
+const HOME_COLOR = "green";
 const AWAY_COLOR = "blue";
+const BALL_COLOR = "red";
 const OFFENCE_TEXT = "o";
 const DEFENCE_TEXT = "x";
+const BALL_TEXT = "#";
 
 const TEAM_FLD = "team";
 const X_FLD = "x";
 const Y_FLD = "y";
 const ROUTE_FLD = "route";
 const POS_FLD = "position";
+const EVENT_FLD = "event";
 
 const QB_POS = "QB";
+const NONE_EVENT = "None";
 
 const startX = 50;
 const startY = 100;
 const scale = 6;
+const fieldWidth = 120;
+const fieldHeight = 53.3;
+const yardlineWidth = 10;
+const endzoneWidth = 10;
 
 const FRAME_RATE = 15;
+const FRAME_INTERVAL = 1000 / FRAME_RATE;
 
 function translate(x, y) {
   var newx = startX + x * scale;
-  var newy = startY + y * scale;
+  var newy = startY + (fieldHeight - y) * scale;
   return new paper.Point(newx, newy);
 }
 
@@ -32,6 +42,8 @@ function gatherPlayerData(data) {
   var home = [];
   var away = [];
   var offenseTeam;
+  var event = NONE_EVENT;
+  var ball = {};
   for(index in jsonData) {
     var d = jsonData[index];
     var x = d[X_FLD];
@@ -40,8 +52,11 @@ function gatherPlayerData(data) {
     var team = d[TEAM_FLD];
     var route = d[ROUTE_FLD];
     var position = d[POS_FLD];
-    if (team === HOME_TEXT) {
+    event = d[EVENT_FLD];
+    if (team === HOME_TEAM) {
       home.push(playerInfo);
+    } else if (team === BALL_TEAM) {
+      ball = playerInfo;
     } else {
       away.push(playerInfo);
     }
@@ -49,7 +64,10 @@ function gatherPlayerData(data) {
       offenseTeam = team;
     }
   }
-  return { home: home, away: away, offense: offenseTeam }
+  if (event !== NONE_EVENT) {
+    appendEvent(event);
+  }
+  return { home: home, away: away, ball: ball, offense: offenseTeam }
 }
 
 function drawPlayer(x, y, color, text) {
@@ -62,16 +80,18 @@ function drawPlayer(x, y, color, text) {
 
 function drawPlayers(data) {
   var info = gatherPlayerData(data);
-  var text = (info.offense === HOME_TEXT)? OFFENCE_TEXT: DEFENCE_TEXT;
+  var text = (info.offense === HOME_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.home) {
     var p = info.home[index];
     drawPlayer(p.x, p.y, HOME_COLOR, text);
   }
-  text = (info.offense === AWAY_TEXT)? OFFENCE_TEXT: DEFENCE_TEXT;
+  text = (info.offense === AWAY_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.away) {
     var p = info.away[index];
     drawPlayer(p.x, p.y, AWAY_COLOR, text);
   }
+  // draw the ball
+  drawPlayer(info.ball.x, info.ball.y, BALL_COLOR, BALL_TEXT);
 }
 
 function drawLine(start, end, width = 3) {
@@ -84,39 +104,34 @@ function drawLine(start, end, width = 3) {
 
 function drawField() {
 
-  var fieldWidth = 120;
-  var fieldHeight = 53;
-  var yardlineWidth = 10;
-  var endzoneWidth = 10;
-
   // Field
-  var leftTop = translate(0, 0);
-  var rightTop = translate(fieldWidth, 0);
-  var rightBottom = translate(fieldWidth, fieldHeight);
-  var leftBottom = translate(0, fieldHeight);
+  var leftTop = translate(0, fieldHeight);
+  var rightTop = translate(fieldWidth, fieldHeight);
+  var rightBottom = translate(fieldWidth, 0);
+  var leftBottom = translate(0, 0);
   drawLine(leftTop, rightTop);
   drawLine(rightTop, rightBottom);
   drawLine(rightBottom, leftBottom);
   drawLine(leftBottom, leftTop);
 
   // Home endzone
-  var top = translate(endzoneWidth, 0);
-  var bottom = translate(endzoneWidth, fieldHeight);
+  var top = translate(endzoneWidth, fieldHeight);
+  var bottom = translate(endzoneWidth, 0);
   drawLine(top, bottom);
 
   // 10 Yard lines (draw 9 thin lines)
   var yardline = endzoneWidth
   for (var i = 0; i < 9; i = i + 1) {
     yardline = yardline + yardlineWidth
-    var top = translate(yardline, 0);
-    var bottom = translate(yardline, fieldHeight);
+    var top = translate(yardline, fieldHeight);
+    var bottom = translate(yardline, 0);
     drawLine(top, bottom, 1);
   }
 
   // Visitor endzone
   var visitorendline = fieldWidth - endzoneWidth
-  var top = translate(visitorendline, 0);
-  var bottom = translate(visitorendline, fieldHeight);
+  var top = translate(visitorendline, fieldHeight);
+  var bottom = translate(visitorendline, 0);
   drawLine(top, bottom);
 
 }
@@ -130,26 +145,51 @@ function draw(data) {
   paper.project.remove();
 }
 
+function handleMessage(evt, ws) {
+  var data = JSON.parse(evt.data);
+  var drawData = data.drawData;
+  var nextFrameData = data.frameData;
+  draw(drawData);
+  if (nextFrameData.frame > nextFrameData.frameCount) {
+    ws.close();
+    enableButton();
+    return;
+  }
+  setTimeout(function() {
+    ws.send(JSON.stringify(nextFrameData));
+  }, FRAME_INTERVAL);
+}
+
 function startWebSocketClient(data) {
   var ws = new WebSocket("ws://localhost:3030/");
-  var interval = 1000 / FRAME_RATE;
   ws.onopen = function() {
     ws.send(JSON.stringify(data));
   };
   ws.onmessage = function(evt) {
-    var data = JSON.parse(evt.data);
-    var drawData = data.drawData;
-    var nextFrameData = data.frameData;
-    draw(drawData);
-    if (nextFrameData.frame > nextFrameData.frameCount) return;
-    setTimeout(function() {
-      ws.send(JSON.stringify(nextFrameData));
-    }, interval);
+    handleMessage(evt, ws)
   }
 }
 
-function showPlay(data) {
+function enableButton() {
+  document.getElementById("drawButton").disabled = false;
+}
+
+function disableButton() {
   document.getElementById("drawButton").disabled = true;
+}
+
+function appendEvent(event) {
+  var divNode = document.getElementById("keyEvents");
+  divNode.innerHTML += "Event: " + event + "<br/>";
+}
+
+function clearEvents() {
+  document.getElementById("keyEvents").innerHTML = "";
+}
+
+function showPlay(data) {
+  disableButton();
+  clearEvents();
   data.frame = 1;
   startWebSocketClient(data);
 }

@@ -19,13 +19,15 @@ exports.showPlay = (req, res) => {
   var game = req.body.game;
   var play = req.body.play;
   var folder = path.join(inputConfig.folder, game, play);
-  var frameFile = path.join(folder, "1.json");
-  var fileExists = fs.existsSync(frameFile);
-  if (!fileExists) {
+  var folderExists = fs.existsSync(folder);
+  if (!folderExists) {
     res.render("error.pug", { game: game, play: play});
     return;
   }
-  var data = fs.readFileSync(frameFile, "utf-8");
+  var folderContent = fs.readdirSync(folder);
+  var jsonFiles = folderContent.filter(file => file.endsWith(".json"));
+  var data = {game: game, play: play, folder: folder,
+    frameCount: jsonFiles.length};
   var jsonData = JSON.stringify(data);
   res.render("display.pug", {data: jsonData})
 }

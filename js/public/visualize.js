@@ -11,10 +11,15 @@ const TEAM_FLD = "team";
 const X_FLD = "x";
 const Y_FLD = "y";
 const ROUTE_FLD = "route";
+const POS_FLD = "position";
+
+const QB_POS = "QB";
 
 const startX = 50;
 const startY = 100;
 const scale = 6;
+
+const FRAME_RATE = 5;
 
 function translate(x, y) {
   var newx = startX + x * scale;
@@ -34,12 +39,13 @@ function gatherPlayerData(data) {
     var playerInfo = { x: x, y: y};
     var team = d[TEAM_FLD];
     var route = d[ROUTE_FLD];
+    var position = d[POS_FLD];
     if (team === HOME_TEXT) {
       home.push(playerInfo);
     } else {
       away.push(playerInfo);
     }
-    if (route != null) {
+    if (route != null || position === QB_POS) {
       offenseTeam = team;
     }
   }
@@ -122,4 +128,28 @@ function draw(data) {
   drawPlayers(data);
   paper.view.draw();
   paper.project.remove();
+}
+
+function startWebSocketClient(data) {
+  var ws = new WebSocket("ws://localhost:3030/");
+  var interval = 1000 / FRAME_RATE;
+  ws.onopen = function() {
+    ws.send(JSON.stringify(data));
+  };
+  ws.onmessage = function(evt) {
+    var data = JSON.parse(evt.data);
+    var drawData = data.drawData;
+    var nextFrameData = data.frameData;
+    draw(drawData);
+    if (data.frame > data.frameCount) return;
+    setTimeout(function() {
+      ws.send(JSON.stringify(nextFrameData));
+    }, interval);
+  }
+}
+
+function showPlay(data) {
+  document.getElementById("drawButton").disabled = true;
+  data.frame = 1;
+  startWebSocketClient(data);
 }

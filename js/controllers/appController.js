@@ -25,9 +25,10 @@ exports.showPlay = (req, res) => {
     return;
   }
   var folderContent = fs.readdirSync(folder);
-  var jsonFiles = folderContent.filter(file => file.endsWith(".json"));
+  var frameRegex = /^\d+\.json$/
+  var frameFiles = folderContent.filter(file => frameRegex.test(file));
   var data = {game: game, play: play, folder: folder,
-    frameCount: jsonFiles.length};
+    frameCount: frameFiles.length};
   var jsonData = JSON.stringify(data);
   res.render("display.pug", {data: jsonData})
 }

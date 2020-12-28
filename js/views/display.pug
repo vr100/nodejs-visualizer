@@ -6,8 +6,12 @@ head
   script(type="text/javascript" src="visualize.js")
 body
   canvas(id="drawCanvas")
-  button(id="drawButton" onclick="showPlay(" + data + ")")
+  button(id="drawButton" onclick="showPlayFromFirst(" + data + ")")
     | Start Play
+  div(id="frameDiv")
+    button(id="frameButton" onclick="gotoFirstFrame(" + data + ")")
+      | Goto First Frame
+    span(id="frameData")
   a(id="choosePlay" href="/")
-    | Choose another play
+    | Choose Another Play
   div(id="keyEvents")

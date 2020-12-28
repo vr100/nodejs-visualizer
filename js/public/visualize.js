@@ -16,12 +16,13 @@ const Y_FLD = "y";
 const ROUTE_FLD = "route";
 const POS_FLD = "position";
 const EVENT_FLD = "event";
+const FRAME_FLD = "frameId";
 
 const QB_POS = "QB";
 const NONE_EVENT = "None";
 
 const startX = 50;
-const startY = 100;
+const startY = 50;
 const scale = 6;
 const fieldWidth = 120;
 const fieldHeight = 53.3;
@@ -52,6 +53,8 @@ function gatherPlayerData(data) {
     var team = d[TEAM_FLD];
     var route = d[ROUTE_FLD];
     var position = d[POS_FLD];
+    var frame = d[FRAME_FLD];
+
     event = d[EVENT_FLD];
     if (team === HOME_TEAM) {
       home.push(playerInfo);
@@ -65,7 +68,7 @@ function gatherPlayerData(data) {
     }
   }
   if (event !== NONE_EVENT) {
-    appendEvent(event);
+    appendEvent(event, frame);
   }
   return { home: home, away: away, ball: ball, offense: offenseTeam }
 }
@@ -74,7 +77,8 @@ function drawPlayer(x, y, color, text) {
   var text = new PointText({
     point: translate(x, y),
     fillColor: color,
-    content: text
+    content: text,
+    fontSize: "large"
   });
 }
 
@@ -145,51 +149,149 @@ function draw(data) {
   paper.project.remove();
 }
 
-function handleMessage(evt, ws) {
+function handleMessage(evt, ws, normalMode=true) {
   var data = JSON.parse(evt.data);
   var drawData = data.drawData;
   var nextFrameData = data.frameData;
   draw(drawData);
   if (nextFrameData.frame > nextFrameData.frameCount) {
     ws.close();
-    enableButton();
+    resetPlay(nextFrameData);
     return;
   }
-  setTimeout(function() {
-    ws.send(JSON.stringify(nextFrameData));
-  }, FRAME_INTERVAL);
+  if (normalMode) {
+    setTimeout(function() {
+      ws.send(JSON.stringify(nextFrameData));
+      setFrameText(nextFrameData);
+    }, FRAME_INTERVAL);
+  } else {
+    enableFrameButton(nextFrameData);
+    ws.close();
+  }
 }
 
-function startWebSocketClient(data) {
+function startWebSocketClient(data, normalMode=true) {
   var ws = new WebSocket("ws://localhost:3030/");
   ws.onopen = function() {
     ws.send(JSON.stringify(data));
+    setFrameText(data);
+    if (normalMode) {
+      changeToPauseMode(ws, data);
+    }
   };
   ws.onmessage = function(evt) {
-    handleMessage(evt, ws)
+    handleMessage(evt, ws, normalMode)
   }
+  return ws;
 }
 
-function enableButton() {
-  document.getElementById("drawButton").disabled = false;
-}
-
-function disableButton() {
+function disableButtons() {
   document.getElementById("drawButton").disabled = true;
+  document.getElementById("frameButton").disabled = true;
 }
 
-function appendEvent(event) {
+function resetPlay(data) {
+  changeToStartMode(data);
+  resetFrameButton(data);
+}
+
+function changeToStartMode(data) {
+  var message = "Start Play";
+  var onclickFn = function() { showPlayFromFirst(data); };
+  changeToMode(message, onclickFn);
+}
+
+function changeToPauseMode(ws) {
+  var message = "Pause Play";
+  var onclickFn = function() { pausePlay(ws); };
+  changeToMode(message, onclickFn);
+}
+
+function changeToContinueMode(data) {
+  var message = "Continue Play";
+  var onclickFn = function () {
+    showPlay(data);
+  }
+  changeToMode(message, onclickFn);
+}
+
+function changeToMode(modeMessage, onclickFn) {
+  var drawButton = document.getElementById("drawButton");
+  drawButton.disabled = true;
+  drawButton.innerHTML = modeMessage;
+  drawButton.onclick = onclickFn;
+  drawButton.disabled = false;
+}
+
+function appendEvent(event, frame) {
   var divNode = document.getElementById("keyEvents");
-  divNode.innerHTML += "Event: " + event + "<br/>";
+  divNode.innerHTML += "[" + frame + "] Event: " + event + "<br/>";
 }
 
 function clearEvents() {
   document.getElementById("keyEvents").innerHTML = "";
 }
 
-function showPlay(data) {
-  disableButton();
+function pausePlay(ws) {
+  var drawButton = document.getElementById("drawButton");
+  drawButton.disabled = true;
+  ws.onmessage = function(evt) {
+    var data = JSON.parse(evt.data);
+    var nextFrameData = data.frameData;
+    enableFrameButton(nextFrameData);
+    ws.close();
+  }
+}
+
+function showPlayFromFirst(data) {
   clearEvents();
+  resetFrameText();
   data.frame = 1;
+  showPlay(data);
+}
+
+function showPlay(data) {
+  disableButtons();
   startWebSocketClient(data);
+}
+
+function resetFrameText() {
+  document.getElementById("frameData").innerHTML = "";
+}
+
+function setFrameText(data) {
+  document.getElementById("frameData").innerHTML = "Frame: " + data.frame +
+    " Total frames: " + data.frameCount;
+}
+
+function resetFrameButton(data) {
+  var onclickFn = function() { gotoFirstFrame(data); }
+  changeFrameButton("Goto First Frame", onclickFn);
+}
+
+function enableFrameButton(data) {
+  var onclickFn = function() { gotoNextFrame(data) };
+  changeFrameButton("Goto Next Frame", onclickFn);
+  changeToContinueMode(data);
+}
+
+function changeFrameButton(message, onclickFn) {
+  var frameButton = document.getElementById("frameButton");
+  frameButton.disabled = true;
+  frameButton.innerHTML = message;
+  frameButton.onclick = onclickFn;
+  frameButton.disabled = false;
+}
+
+function gotoNextFrame(data) {
+  document.getElementById("frameButton").disabled = true;
+  startWebSocketClient(data, normalMode=false);
+}
+
+function gotoFirstFrame(data) {
+  disableButtons();
+  clearEvents();
+  resetFrameText();
+  data.frame = 1;
+  startWebSocketClient(data, normalMode=false);
 }

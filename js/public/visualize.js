@@ -5,6 +5,7 @@ const AWAY_TEAM = "away";
 const BALL_TEAM = "football";
 const HOME_COLOR = "green";
 const AWAY_COLOR = "blue";
+const RECEIVER_COLOR = "brown";
 const BALL_COLOR = "red";
 const OFFENCE_TEXT = "o";
 const DEFENCE_TEXT = "x";
@@ -13,6 +14,7 @@ const BALL_TEXT = "#";
 const TEAM_FLD = "team";
 const X_FLD = "x";
 const Y_FLD = "y";
+const ID_FLD = "nflId";
 const ROUTE_FLD = "route";
 const POS_FLD = "position";
 const EVENT_FLD = "event";
@@ -32,6 +34,32 @@ const endzoneWidth = 10;
 const FRAME_RATE = 15;
 const FRAME_INTERVAL = 1000 / FRAME_RATE;
 
+function getLinePoints(a, b, c) {
+  // line eqn: ax + by + c = 0
+  // check x = 0, y = -c/b
+  points = [];
+  y = -c/b;
+  if (y <= fieldHeight && y >= 0) {
+    points.push({ x: 0, y: y});
+  }
+  // check x = fieldWidth, y = -a/b * x - c/b
+  y = (-a/b) * fieldWidth + (-c/b);
+  if (y <= fieldHeight && y >= 0) {
+    points.push({ x: fieldWidth, y: y});
+  }
+  // check y = 0, x = -c/a
+  x = -c/a;
+  if (x <= fieldWidth && x >= 0) {
+    points.push({x: x, y: 0});
+  }
+  // check y = fieldHeight, x = -b/a * y - c/a
+  x = (-b/a) * fieldHeight + (-c/a);
+  if (x <= fieldWidth && x >= 0) {
+    points.push({x: x, y: fieldHeight});
+  }
+  return points;
+}
+
 function translate(x, y) {
   var newx = startX + x * scale;
   var newy = startY + (fieldHeight - y) * scale;
@@ -49,7 +77,8 @@ function gatherPlayerData(data) {
     var d = jsonData[index];
     var x = d[X_FLD];
     var y = d[Y_FLD];
-    var playerInfo = { x: x, y: y};
+    var id = d[ID_FLD]
+    var playerInfo = { x: x, y: y, id: id};
     var team = d[TEAM_FLD];
     var route = d[ROUTE_FLD];
     var position = d[POS_FLD];
@@ -82,26 +111,44 @@ function drawPlayer(x, y, color, text) {
   });
 }
 
+function getReceivers(data) {
+  var skip = !(document.getElementById("ballReceiverInput").checked);
+  if (skip) {
+    return [];
+  }
+  var rData = data.ballReceiver;
+  return [rData.receiver_0];
+}
+
 function drawPlayers(data) {
-  var info = gatherPlayerData(data);
+  var info = gatherPlayerData(data.drawData);
+  var receivers = getReceivers(data.frameData);
   var text = (info.offense === HOME_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.home) {
     var p = info.home[index];
-    drawPlayer(p.x, p.y, HOME_COLOR, text);
+    var color = HOME_COLOR;
+    if (receivers.includes(p.id)) {
+      color = RECEIVER_COLOR;
+    }
+    drawPlayer(p.x, p.y, color, text);
   }
   text = (info.offense === AWAY_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.away) {
     var p = info.away[index];
-    drawPlayer(p.x, p.y, AWAY_COLOR, text);
+    var color = AWAY_COLOR;
+    if (receivers.includes(p.id)) {
+      color = RECEIVER_COLOR
+    }
+    drawPlayer(p.x, p.y, color, text);
   }
   // draw the ball
   drawPlayer(info.ball.x, info.ball.y, BALL_COLOR, BALL_TEXT);
 }
 
-function drawLine(start, end, width = 3) {
+function drawLine(start, end, width = 3, color = "black") {
   var path = new paper.Path({
     segments: [start, end],
-    strokeColor: 'black',
+    strokeColor: color,
     strokeWidth: width
   });
 }
@@ -140,20 +187,35 @@ function drawField() {
 
 }
 
+function drawBallReceiverInfo(data) {
+  var skip = !(document.getElementById("ballReceiverInput").checked);
+  if (skip) {
+    return [];
+  }
+  var rData = data.ballReceiver;
+  var points = getLinePoints(rData.line_a, rData.line_b, rData.line_c);
+  if (points.length < 2) {
+    return;
+  }
+  var start = translate(points[0].x, points[0].y);
+  var end = translate(points[1].x, points[1].y);
+  drawLine(start, end, width = 1, color = "red");
+}
+
 function draw(data) {
   var canvas = document.getElementById("drawCanvas");
   paper.setup("drawCanvas");
   drawField();
   drawPlayers(data);
+  drawBallReceiverInfo(data.frameData);
   paper.view.draw();
   paper.project.remove();
 }
 
 function handleMessage(evt, ws, normalMode=true) {
   var data = JSON.parse(evt.data);
-  var drawData = data.drawData;
   var nextFrameData = data.frameData;
-  draw(drawData);
+  draw(data);
   if (nextFrameData.frame > nextFrameData.frameCount) {
     ws.close();
     resetPlay(nextFrameData);

@@ -6,6 +6,9 @@ head
   script(type="text/javascript" src="visualize.js")
 body
   canvas(id="drawCanvas")
+  div(id="ballReceiverDiv")
+    input(type="checkbox" id="ballReceiverInput")
+    | Show ball receiver info
   button(id="drawButton" onclick="showPlayFromFirst(" + data + ")")
     | Start Play
   div(id="frameDiv")

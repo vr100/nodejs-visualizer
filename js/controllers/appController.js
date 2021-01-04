@@ -15,6 +15,25 @@ exports.home = (req, res) => {
   res.render("home.pug");
 }
 
+function getBallReceiverData(data, game, play) {
+  var newData = {};
+  for (var i = 0; i < data.length; i = i + 1) {
+    if (data[i]["gameId"].toString() !== game ||
+      data[i]["playId"].toString() !== play) {
+      continue;
+    }
+    var newDataMap = {};
+    for (var key in data[i]) {
+      if (key === "gameId" || key === "playId") {
+        continue;
+      }
+      newDataMap[key] = data[i][key];
+    }
+    return newDataMap;
+  }
+  return {};
+}
+
 exports.showPlay = (req, res) => {
   var game = req.body.game;
   var play = req.body.play;
@@ -27,8 +46,10 @@ exports.showPlay = (req, res) => {
   var folderContent = fs.readdirSync(folder);
   var frameRegex = /^\d+\.json$/
   var frameFiles = folderContent.filter(file => frameRegex.test(file));
+  var receiverData = JSON.parse(fs.readFileSync(inputConfig.receiverFile, "utf-8"));
+  receiverData = getBallReceiverData(receiverData, game, play);
   var data = {game: game, play: play, folder: folder,
-    frameCount: frameFiles.length};
+    frameCount: frameFiles.length, ballReceiver: receiverData};
   var jsonData = JSON.stringify(data);
   res.render("display.pug", {data: jsonData})
 }

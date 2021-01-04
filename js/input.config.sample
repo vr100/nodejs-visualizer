@@ -1,3 +1,4 @@
 {
-	"folder": "/workspace/temp/output"
+	"folder": "/workspace/temp/output",
+	"receiverFile": "/workspace/temp/output/ball_receiver.json"
 }

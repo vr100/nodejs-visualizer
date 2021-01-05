@@ -306,6 +306,7 @@ function pausePlay(ws) {
 }
 
 function showPlayFromFirst(data) {
+  setPlayInfo(data);
   clearEvents();
   resetFrameText();
   data.frame = 1;
@@ -345,12 +346,19 @@ function changeFrameButton(message, onclickFn) {
   frameButton.disabled = false;
 }
 
+function setPlayInfo(data) {
+  var playDiv = document.getElementById("playInfo");
+  playDiv.innerHTML = "Currently showing [Play] " + data.play  +
+     " [Game] " + data.game;
+}
+
 function gotoNextFrame(data) {
   document.getElementById("frameButton").disabled = true;
   startWebSocketClient(data, normalMode=false);
 }
 
 function gotoFirstFrame(data) {
+  setPlayInfo(data);
   disableButtons();
   clearEvents();
   resetFrameText();

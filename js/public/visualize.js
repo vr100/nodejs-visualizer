@@ -6,6 +6,7 @@ const BALL_TEAM = "football";
 const HOME_COLOR = "green";
 const AWAY_COLOR = "blue";
 const RECEIVER_COLOR = "brown";
+const DEFENDENT_COLOR = "orange";
 const BALL_COLOR = "red";
 const OFFENCE_TEXT = "o";
 const DEFENCE_TEXT = "x";
@@ -116,19 +117,32 @@ function getReceivers(data) {
   if (skip) {
     return [];
   }
-  var rData = data.ballReceiver;
-  return [rData.receiver_0];
+  var rData = data.ballReceiver["0"];
+  return [rData.receiver];
+}
+
+function getDefendents(data) {
+  var skip = !(document.getElementById("ballReceiverInput").checked);
+  if (skip) {
+    return [];
+  }
+  var rData = data.ballReceiver["0"];
+  return [rData.def_0];
 }
 
 function drawPlayers(data) {
   var info = gatherPlayerData(data.drawData);
   var receivers = getReceivers(data.frameData);
+  var defendents = getDefendents(data.frameData);
   var text = (info.offense === HOME_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.home) {
     var p = info.home[index];
     var color = HOME_COLOR;
     if (receivers.includes(p.id)) {
       color = RECEIVER_COLOR;
+    }
+    if (defendents.includes(p.id)) {
+      color = DEFENDENT_COLOR;
     }
     drawPlayer(p.x, p.y, color, text);
   }
@@ -138,6 +152,9 @@ function drawPlayers(data) {
     var color = AWAY_COLOR;
     if (receivers.includes(p.id)) {
       color = RECEIVER_COLOR
+    }
+    if (defendents.includes(p.id)) {
+      color = DEFENDENT_COLOR;
     }
     drawPlayer(p.x, p.y, color, text);
   }
@@ -192,7 +209,7 @@ function drawBallReceiverInfo(data) {
   if (skip) {
     return [];
   }
-  var rData = data.ballReceiver;
+  var rData = data.ballReceiver["0"];
   var points = getLinePoints(rData.line_a, rData.line_b, rData.line_c);
   if (points.length < 2) {
     return;

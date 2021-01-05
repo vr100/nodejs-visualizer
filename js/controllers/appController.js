@@ -23,15 +23,20 @@ function getBallReceiverData(data, game, play) {
       continue;
     }
     var newDataMap = {};
+    var rank = "-1";
     for (var key in data[i]) {
       if (key === "gameId" || key === "playId") {
         continue;
       }
+      if (key === "rank") {
+        rank = data[i][key];
+        continue;
+      }
       newDataMap[key] = data[i][key];
     }
-    return newDataMap;
+    newData[rank] = newDataMap;
   }
-  return {};
+  return newData;
 }
 
 exports.showPlay = (req, res) => {

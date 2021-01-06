@@ -7,8 +7,10 @@ head
 body
   canvas(id="drawCanvas")
   div(id="ballReceiverDiv")
-    input(type="checkbox" id="ballReceiverInput" checked)
     | Show ball receiver info
+    input(type="checkbox" id="ballReceiverInput" checked)
+    | &nbsp;&nbsp; Highlight player &nbsp;
+    input(type="number" id="playerInput")
   div(id="frameDiv")
     button(id="drawButton" onclick="showPlayFromFirst(" + data + ")")
       | Start Play

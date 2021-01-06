@@ -7,10 +7,13 @@ const HOME_COLOR = "green";
 const AWAY_COLOR = "blue";
 const RECEIVER_COLOR = "brown";
 const DEFENDENT_COLOR = "orange";
+const HIGHLIGHT_COLOR = "black";
+const HIGHLIGHT_SIZE = "x-large";
 const BALL_COLOR = "red";
 const OFFENCE_TEXT = "o";
 const DEFENCE_TEXT = "x";
 const BALL_TEXT = "#";
+const FONT_SIZE = "large";
 
 const TEAM_FLD = "team";
 const X_FLD = "x";
@@ -103,12 +106,12 @@ function gatherPlayerData(data) {
   return { home: home, away: away, ball: ball, offense: offenseTeam }
 }
 
-function drawPlayer(x, y, color, text) {
+function drawPlayer(x, y, color, text, fontSize) {
   var text = new PointText({
     point: translate(x, y),
     fillColor: color,
     content: text,
-    fontSize: "large"
+    fontSize: fontSize
   });
 }
 
@@ -131,11 +134,13 @@ function getDefendents(data) {
 }
 
 function drawPlayers(data) {
+  var highlightPlayer = document.getElementById("playerInput").value
   var info = gatherPlayerData(data.drawData);
   var receivers = getReceivers(data.frameData);
   var defendents = getDefendents(data.frameData);
   var text = (info.offense === HOME_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.home) {
+    var fontSize = FONT_SIZE;
     var p = info.home[index];
     var color = HOME_COLOR;
     if (receivers.includes(p.id)) {
@@ -144,10 +149,15 @@ function drawPlayers(data) {
     if (defendents.includes(p.id)) {
       color = DEFENDENT_COLOR;
     }
-    drawPlayer(p.x, p.y, color, text);
+    if (parseInt(highlightPlayer) === p.id) {
+      color = HIGHLIGHT_COLOR;
+      fontSize = HIGHLIGHT_SIZE
+    }
+    drawPlayer(p.x, p.y, color, text, fontSize);
   }
   text = (info.offense === AWAY_TEAM)? OFFENCE_TEXT: DEFENCE_TEXT;
   for (index in info.away) {
+    var fontSize = FONT_SIZE;
     var p = info.away[index];
     var color = AWAY_COLOR;
     if (receivers.includes(p.id)) {
@@ -156,10 +166,14 @@ function drawPlayers(data) {
     if (defendents.includes(p.id)) {
       color = DEFENDENT_COLOR;
     }
-    drawPlayer(p.x, p.y, color, text);
+    if (parseInt(highlightPlayer) === p.id) {
+      color = HIGHLIGHT_COLOR;
+      fontSize = HIGHLIGHT_SIZE
+    }
+    drawPlayer(p.x, p.y, color, text, fontSize);
   }
   // draw the ball
-  drawPlayer(info.ball.x, info.ball.y, BALL_COLOR, BALL_TEXT);
+  drawPlayer(info.ball.x, info.ball.y, BALL_COLOR, BALL_TEXT, FONT_SIZE);
 }
 
 function drawLine(start, end, width = 3, color = "black") {

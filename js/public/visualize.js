@@ -117,7 +117,7 @@ function drawPlayer(x, y, color, text, fontSize) {
 
 function getReceivers(data) {
   var skip = !(document.getElementById("ballReceiverInput").checked);
-  if (skip) {
+  if (skip || Object.keys(data.ballReceiver).length == 0) {
     return [];
   }
   var rData = data.ballReceiver["0"];
@@ -126,7 +126,7 @@ function getReceivers(data) {
 
 function getDefendents(data) {
   var skip = !(document.getElementById("ballReceiverInput").checked);
-  if (skip) {
+  if (skip || Object.keys(data.ballReceiver).length == 0) {
     return [];
   }
   var rData = data.ballReceiver["0"];
@@ -220,7 +220,7 @@ function drawField() {
 
 function drawBallReceiverInfo(data) {
   var skip = !(document.getElementById("ballReceiverInput").checked);
-  if (skip) {
+  if (skip || Object.keys(data.ballReceiver).length == 0) {
     return [];
   }
   var rData = data.ballReceiver["0"];
